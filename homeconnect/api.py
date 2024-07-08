@@ -32,9 +32,9 @@ class HomeConnectAPI:
     def __init__(
         self,
         token: Optional[Dict[str, str]] = None,
-        client_id: str = None,
-        client_secret: str = None,
-        redirect_uri: str = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        redirect_uri: str | None = None,
         api_url: Optional[str] = None,
         token_updater: Optional[Callable[[str], None]] = None,
     ):
@@ -44,7 +44,7 @@ class HomeConnectAPI:
         self.redirect_uri = redirect_uri
         self.token_updater = token_updater
 
-        self._appliances = {}
+        self._appliances: dict = {}
         self.listening_events = False
 
         extra = {"client_id": self.client_id, "client_secret": self.client_secret}
@@ -86,7 +86,10 @@ class HomeConnectAPI:
             return getattr(self._oauth, method)(url, **kwargs)
         except RetryError as e:
             LOGGER.warning("Retry failed: %s", e)
-            return e.response
+            re = e.response
+            if re is None:
+                raise e
+            return re
 
     def get(self, endpoint):
         """Get data as dictionary from an endpoint."""
@@ -94,14 +97,14 @@ class HomeConnectAPI:
         if not res.content:
             return {}
         try:
-            res = res.json()
+            res_json = res.json()
         except:
-            raise ValueError("Cannot parse {} as JSON".format(res))
-        if "error" in res:
-            raise HomeConnectError(res["error"])
-        elif "data" not in res:
+            raise ValueError("Cannot parse {} as JSON".format(res_json))
+        if "error" in res_json:
+            raise HomeConnectError(res_json["error"])
+        elif "data" not in res_json:
             raise HomeConnectError("Unexpected error")
-        return res["data"]
+        return res_json["data"]
 
     def put(self, endpoint, data):
         """Send (PUT) data to an endpoint."""
@@ -117,12 +120,12 @@ class HomeConnectAPI:
         if not res.content:
             return {}
         try:
-            res = res.json()
+            res_json = res.json()
         except:
-            raise ValueError("Cannot parse {} as JSON".format(res))
-        if "error" in res:
-            raise HomeConnectError(res["error"])
-        return res
+            raise ValueError("Cannot parse {} as JSON".format(res_json))
+        if "error" in res_json:
+            raise HomeConnectError(res_json["error"])
+        return res_json
 
     def delete(self, endpoint):
         """Delete an endpoint."""
@@ -130,17 +133,17 @@ class HomeConnectAPI:
         if not res.content:
             return {}
         try:
-            res = res.json()
+            res_json = res.json()
         except:
-            raise ValueError("Cannot parse {} as JSON".format(res))
-        if "error" in res:
-            raise HomeConnectError(res["error"])
-        return res
+            raise ValueError("Cannot parse {} as JSON".format(res_json))
+        if "error" in res_json:
+            raise HomeConnectError(res_json["error"])
+        return res_json
 
     def get_appliances(self):
         """Return a list of `HomeConnectAppliance` instances for all appliances."""
 
-        appliances = {}
+        appliances: dict = {}
 
         data = self.get(ENDPOINT_APPLIANCES)
         for home_appliance in data["homeappliances"]:

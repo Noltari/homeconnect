@@ -1,6 +1,15 @@
 [tool.black]
 line-length = 88
 
+[tool.mypy]
+python_version = "3.12"
+
+[[tool.mypy.overrides]]
+module = [
+    "requests_oauthlib"
+]
+ignore_missing_imports = true
+
 [tool.ruff.lint]
 select = [
     "D",  # docstrings
